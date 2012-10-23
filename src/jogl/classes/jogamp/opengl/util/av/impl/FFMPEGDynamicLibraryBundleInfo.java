@@ -100,6 +100,7 @@ class FFMPEGDynamicLibraryBundleInfo implements DynamicLibraryBundleInfo  {
     private static String[][] altSymbolNames = {
         { "avcodec_open",          "avcodec_open2" },              // old, 53.6.0
         { "avcodec_decode_audio3", "avcodec_decode_audio4" },      // old, 53.25.0
+        { "av_open_input_file",    "avformat_open_input" },        // old, F17
         { "av_close_input_file",   "avformat_close_input" },       // old, 53.17.0
         { "av_find_stream_info",   "avformat_find_stream_info" },  // old, 53.3.0       
     };
