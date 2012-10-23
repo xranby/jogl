@@ -96,7 +96,7 @@ typedef void (APIENTRYP AVFORMAT_CLOSE_INPUT)(AVFormatContext **s);  // 53.17.0
 typedef void (APIENTRYP AV_CLOSE_INPUT_FILE)(AVFormatContext *s);
 typedef void (APIENTRYP AV_REGISTER_ALL)(void);
 typedef int (APIENTRYP AVFORMAT_OPEN_INPUT)(AVFormatContext **ps, const char *filename, AVInputFormat *fmt, AVDictionary **options);
-typedef int (APIENTRYP AV_OPEN_INPUT_FILE)(AVFormatContext *s, const char *filename, AVInputFormat *fmt, AVDictionary **options);
+typedef int (APIENTRYP AV_OPEN_INPUT_FILE)(AVFormatContext **ps, const char *filename, AVInputFormat *fmt, AVDictionary **options);
 typedef void (APIENTRYP AV_DUMP_FORMAT)(AVFormatContext *ic, int index, const char *url, int is_output);
 typedef int (APIENTRYP AV_READ_FRAME)(AVFormatContext *s, AVPacket *pkt);
 typedef int (APIENTRYP AV_SEEK_FRAME)(AVFormatContext *s, int stream_index, int64_t timestamp, int flags);
@@ -400,7 +400,7 @@ JNIEXPORT void JNICALL Java_jogamp_opengl_util_av_impl_FFMPEGMediaPlayer_setStre
             return;
         }
     } else {
-        res = sp_av_open_input_file(pAV->pFormatCtx, urlPath, NULL, NULL);
+        res = sp_av_open_input_file(&pAV->pFormatCtx, urlPath, NULL, NULL);
         if(res != 0) {
             (*env)->ReleaseStringChars(env, jURL, (const jchar *)urlPath);
             JoglCommon_throwNewRuntimeException(env, "Couldn't open URL");
