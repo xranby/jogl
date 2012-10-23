@@ -96,6 +96,7 @@ typedef void (APIENTRYP AVFORMAT_CLOSE_INPUT)(AVFormatContext **s);  // 53.17.0
 typedef void (APIENTRYP AV_CLOSE_INPUT_FILE)(AVFormatContext *s);
 typedef void (APIENTRYP AV_REGISTER_ALL)(void);
 typedef int (APIENTRYP AVFORMAT_OPEN_INPUT)(AVFormatContext **ps, const char *filename, AVInputFormat *fmt, AVDictionary **options);
+typedef int (APIENTRYP AV_OPEN_INPUT_FILE)(AVFormatContext *s, const char *filename, AVInputFormat *fmt, AVDictionary **options);
 typedef void (APIENTRYP AV_DUMP_FORMAT)(AVFormatContext *ic, int index, const char *url, int is_output);
 typedef int (APIENTRYP AV_READ_FRAME)(AVFormatContext *s, AVPacket *pkt);
 typedef int (APIENTRYP AV_SEEK_FRAME)(AVFormatContext *s, int stream_index, int64_t timestamp, int flags);
@@ -110,6 +111,7 @@ static AVFORMAT_CLOSE_INPUT sp_avformat_close_input;              // 53.17.0
 static AV_CLOSE_INPUT_FILE sp_av_close_input_file;
 static AV_REGISTER_ALL sp_av_register_all;
 static AVFORMAT_OPEN_INPUT sp_avformat_open_input;
+static AV_OPEN_INPUT_FILE sp_av_open_input_file;
 static AV_DUMP_FORMAT sp_av_dump_format;
 static AV_READ_FRAME sp_av_read_frame;
 static AV_SEEK_FRAME sp_av_seek_frame;
@@ -117,9 +119,9 @@ static AVFORMAT_NETWORK_INIT sp_avformat_network_init;            // 53.13.0
 static AVFORMAT_NETWORK_DEINIT sp_avformat_network_deinit;        // 53.13.0
 static AVFORMAT_FIND_STREAM_INFO sp_avformat_find_stream_info;    // 53.3.0
 static AV_FIND_STREAM_INFO sp_av_find_stream_info;
-// count: 31
+// count: 32
 
-#define SYMBOL_COUNT 31
+#define SYMBOL_COUNT 32
 
 JNIEXPORT jboolean JNICALL Java_jogamp_opengl_util_av_impl_FFMPEGDynamicLibraryBundleInfo_initSymbols0
   (JNIEnv *env, jclass clazz, jobject jSymbols, jint count)
@@ -167,6 +169,7 @@ JNIEXPORT jboolean JNICALL Java_jogamp_opengl_util_av_impl_FFMPEGDynamicLibraryB
     sp_av_close_input_file = (AV_CLOSE_INPUT_FILE) (intptr_t) symbols[i++];
     sp_av_register_all = (AV_REGISTER_ALL) (intptr_t) symbols[i++];
     sp_avformat_open_input = (AVFORMAT_OPEN_INPUT) (intptr_t) symbols[i++];
+    sp_av_open_input_file = (AV_OPEN_INPUT_FILE) (intptr_t) symbols[i++];
     sp_av_dump_format = (AV_DUMP_FORMAT) (intptr_t) symbols[i++];
     sp_av_read_frame = (AV_READ_FRAME) (intptr_t) symbols[i++];
     sp_av_seek_frame = (AV_SEEK_FRAME) (intptr_t) symbols[i++];
@@ -174,7 +177,7 @@ JNIEXPORT jboolean JNICALL Java_jogamp_opengl_util_av_impl_FFMPEGDynamicLibraryB
     sp_avformat_network_deinit = (AVFORMAT_NETWORK_DEINIT) (intptr_t) symbols[i++];
     sp_avformat_find_stream_info = (AVFORMAT_FIND_STREAM_INFO) (intptr_t) symbols[i++];
     sp_av_find_stream_info = (AV_FIND_STREAM_INFO) (intptr_t) symbols[i++];
-    // count: 31
+    // count: 32
 
     (*env)->ReleasePrimitiveArrayCritical(env, jSymbols, symbols, 0);
 
@@ -389,11 +392,20 @@ JNIEXPORT void JNICALL Java_jogamp_opengl_util_av_impl_FFMPEGMediaPlayer_setStre
 
     // Open video file
     const char *urlPath = (*env)->GetStringUTFChars(env, jURL, &iscopy);
-    res = sp_avformat_open_input(&pAV->pFormatCtx, urlPath, NULL, NULL);
-    if(res != 0) {
-        (*env)->ReleaseStringChars(env, jURL, (const jchar *)urlPath);
-        JoglCommon_throwNewRuntimeException(env, "Couldn't open URL");
-        return;
+    if(HAS_FUNC(sp_avformat_open_input)) {
+        res = sp_avformat_open_input(&pAV->pFormatCtx, urlPath, NULL, NULL);
+        if(res != 0) {
+            (*env)->ReleaseStringChars(env, jURL, (const jchar *)urlPath);
+            JoglCommon_throwNewRuntimeException(env, "Couldn't open URL");
+            return;
+        }
+    } else {
+        res = sp_av_open_input_file(pAV->pFormatCtx, urlPath, NULL, NULL);
+        if(res != 0) {
+            (*env)->ReleaseStringChars(env, jURL, (const jchar *)urlPath);
+            JoglCommon_throwNewRuntimeException(env, "Couldn't open URL");
+            return;
+        }
     }
 
     // Retrieve detailed stream information

@@ -87,6 +87,7 @@ class FFMPEGDynamicLibraryBundleInfo implements DynamicLibraryBundleInfo  {
          "av_close_input_file",
          "av_register_all", 
          "avformat_open_input", 
+         "av_open_input_file",
          "av_dump_format", 
          "av_read_frame",
          "av_seek_frame",
