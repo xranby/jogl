@@ -55,7 +55,7 @@ import com.jogamp.common.util.RunnableExecutor;
 class FFMPEGDynamicLibraryBundleInfo implements DynamicLibraryBundleInfo  {
     private static List<String> glueLibNames = new ArrayList<String>(); // none
     
-    private static final int symbolCount = 31;
+    private static final int symbolCount = 32;
     private static String[] symbolNames = {
          "avcodec_version",
          "avformat_version",
@@ -94,7 +94,7 @@ class FFMPEGDynamicLibraryBundleInfo implements DynamicLibraryBundleInfo  {
          "avformat_network_init",     // 53.13.0   (opt)
          "avformat_network_deinit",   // 53.13.0   (opt)
          "avformat_find_stream_info", // 53.3.0    (opt)
-/* 29 */ "av_find_stream_info",
+/* 32 */ "av_find_stream_info",
     };
     
     // alternate symbol names
