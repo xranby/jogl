@@ -179,7 +179,7 @@ public class OMXGLMediaPlayer extends EGLMediaPlayerImpl {
         }
         final int nextTex = _getNextTextureID(moviePtr, blocking);
         if(0 < nextTex) {
-            final TextureSequence.TextureFrame eglImgTex = texFrameMap.get(new Integer(_getNextTextureID(moviePtr, blocking)));
+            final TextureSequence.TextureFrame eglImgTex = texFrameMap.get(new Integer(nextTex));
             if(null!=eglImgTex) {
                 lastTex = eglImgTex;
             }
