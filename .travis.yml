@@ -16,4 +16,4 @@ before_install:
 install:
   - pushd jogl/make
   - ant
-  - ant junit.run
+  - ant junit.run > std.out
