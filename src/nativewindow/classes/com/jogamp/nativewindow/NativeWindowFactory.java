@@ -33,6 +33,17 @@
 
 package com.jogamp.nativewindow;
 
+import com.jogamp.common.os.Platform;
+import com.jogamp.common.util.PropertyAccess;
+import com.jogamp.common.util.ReflectionUtil;
+import com.jogamp.nativewindow.awt.AWTGraphicsDevice;
+import com.jogamp.nativewindow.awt.AWTGraphicsScreen;
+import com.jogamp.nativewindow.macosx.MacOSXGraphicsDevice;
+import com.jogamp.nativewindow.util.PointImmutable;
+import com.jogamp.nativewindow.windows.WindowsGraphicsDevice;
+import com.jogamp.nativewindow.x11.X11GraphicsDevice;
+import com.jogamp.nativewindow.x11.X11GraphicsScreen;
+
 import java.io.File;
 import java.lang.reflect.Method;
 import java.security.AccessController;
@@ -43,28 +54,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.jogamp.nativewindow.util.PointImmutable;
-
 import jogamp.common.os.PlatformPropsImpl;
 import jogamp.nativewindow.Debug;
 import jogamp.nativewindow.NativeWindowFactoryImpl;
-import jogamp.nativewindow.ToolkitProperties;
 import jogamp.nativewindow.ResourceToolkitLock;
+import jogamp.nativewindow.ToolkitProperties;
 import jogamp.nativewindow.WrappedWindow;
 import jogamp.nativewindow.macosx.OSXUtil;
 import jogamp.nativewindow.windows.GDIUtil;
 import jogamp.nativewindow.x11.X11Lib;
-
-import com.jogamp.common.os.Platform;
-import com.jogamp.common.util.PropertyAccess;
-import com.jogamp.common.util.ReflectionUtil;
-import com.jogamp.nativewindow.UpstreamWindowHookMutableSizePos;
-import com.jogamp.nativewindow.awt.AWTGraphicsDevice;
-import com.jogamp.nativewindow.awt.AWTGraphicsScreen;
-import com.jogamp.nativewindow.macosx.MacOSXGraphicsDevice;
-import com.jogamp.nativewindow.windows.WindowsGraphicsDevice;
-import com.jogamp.nativewindow.x11.X11GraphicsDevice;
-import com.jogamp.nativewindow.x11.X11GraphicsScreen;
 
 /** Provides a pluggable mechanism for arbitrary window toolkits to
     adapt their components to the {@link NativeWindow} interface,
@@ -77,6 +75,13 @@ import com.jogamp.nativewindow.x11.X11GraphicsScreen;
  */
 public abstract class NativeWindowFactory {
     protected static final boolean DEBUG;
+
+    //TODO
+//    /** Wayland/EGL type, as retrieved with {@link #getNativeWindowType(boolean)}. String is canonical via {@link String#intern()}.*/
+//    public static final String TYPE_WAYLAND = ".wayland".intern();
+
+    /** GBM/EGL type, as retrieved with {@link #getNativeWindowType(boolean)}. String is canonical via {@link String#intern()}.*/
+    public static final String TYPE_GBM = ".gbm".intern();
 
     /** OpenKODE/EGL type, as retrieved with {@link #getNativeWindowType(boolean)}. String is canonical via {@link String#intern()}.*/
     public static final String TYPE_EGL = ".egl".intern();
@@ -157,17 +162,50 @@ public abstract class NativeWindowFactory {
               return TYPE_WINDOWS;
             case OPENKODE:
               return TYPE_EGL;
-
             case LINUX:
             case FREEBSD:
             case SUNOS:
             case HPUX:
             default:
+              if(guessX()){
+                    return TYPE_X11;
+              }
+              if(guessWayland()){
+                  //TODO
+                  //return TYPE_WAYLAND;
+              }
               if( guessBroadcomVCIV() ) {
                 return TYPE_BCM_VC_IV;
               }
-              return TYPE_X11;
+              if(guessGBM()){
+                return TYPE_GBM;
+              }
+              return TYPE_DEFAULT;
         }
+    }
+
+    private static boolean guessX() {
+        return System.getProperty("DISPLAY") !=null;
+    }
+
+    private static boolean guessWayland() {
+        //TODO we can/should do a more elaborate check and try looking for a wayland-0 socket in $XDG_RUNTIME_DIR
+        return System.getProperty("WAYLAND_DISPLAY") !=null;
+    }
+
+    private static boolean guessGBM() {
+        //FIXME this is not the best way to check if we have gbm-egl support, but does a good easy way actually exist?
+        return AccessController.doPrivileged(new PrivilegedAction<Boolean>() {
+            private final File vcliblocation = new File(
+                    "/dev/dri/card0");
+            @Override
+            public Boolean run() {
+                if ( vcliblocation.isFile() ) {
+                    return Boolean.TRUE;
+                }
+                return Boolean.FALSE;
+            }
+        } ).booleanValue();
     }
 
     static {
