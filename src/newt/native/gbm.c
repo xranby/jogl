@@ -1,10 +1,13 @@
+#include <errno.h>
+#include <string.h>
+
 #include "jogamp_newt_driver_gbm_DisplayDriver.h"
 #include "jogamp_newt_driver_gbm_ScreenDriver.h"
 #include "jogamp_newt_driver_gbm_WindowDriver.h"
 
-#include <xf86drm.h>
-#include <xf86drmMode.h>
-#include <gbm.h>
+#include "xf86drm.h"
+#include "xf86drmMode.h"
+#include "gbm.h"
 
 static struct {
 	struct gbm_device *dev;
@@ -28,7 +31,7 @@ struct drm_fb {
  * Method:    initGbm
  * Signature: (J)V
  */
-JNIEXPORT void JNICALL Java_jogamp_newt_driver_gbm_DisplayDriver_initGbm
+JNIEXPORT jlong JNICALL Java_jogamp_newt_driver_gbm_DisplayDriver_initGbm
   (JNIEnv *env, jobject this){
 	static const char *modules[] = {
 			"i915", "radeon", "nouveau", "vmwgfx", "omapdrm", "exynos", "msm"
