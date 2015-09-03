@@ -54,7 +54,7 @@ public class TestWindows02NEWT extends UITestCase {
         height = 600;
     }
 
-    static Window createWindow(final Capabilities caps, final int x, final int y, final int width, final int height, final boolean onscreen, final boolean undecorated) throws InterruptedException {
+    static Window createWindow(final Capabilities caps, final int x, final int y, final int width, final int height, final boolean onscreen, final boolean undecorated, final boolean resizeable) throws InterruptedException {
         final boolean userPos = x>=0 && y>=0 ; // user has specified a position
 
         Assert.assertNotNull(caps);
@@ -72,6 +72,7 @@ public class TestWindows02NEWT extends UITestCase {
         if(userPos) {
             window.setPosition(x, y);
         }
+        window.setResizable(resizeable);
         window.setSize(width, height);
         Assert.assertEquals(false,window.isNativeValid());
         Assert.assertEquals(false,window.isVisible());
@@ -120,7 +121,7 @@ public class TestWindows02NEWT extends UITestCase {
         final Capabilities caps = new Capabilities();
         Assert.assertNotNull(caps);
 
-        final Window window = createWindow(caps, -1, -1, width, height, true /* onscreen */, false /* undecorated */);
+        final Window window = createWindow(caps, -1, -1, width, height, true /* onscreen */, false /* undecorated */, true /* resizable */);
         final CapabilitiesImmutable chosenCapabilities = window.getGraphicsConfiguration().getChosenCapabilities();
         System.err.println("XXX: "+chosenCapabilities);
         for(int state=0; state*100<durationPerTest; state++) {
@@ -130,12 +131,29 @@ public class TestWindows02NEWT extends UITestCase {
     }
 
     @Test
-    public void test02WindowDefault() throws InterruptedException {
+    public void test02WindowTransparent() throws InterruptedException {
         final Capabilities caps = new Capabilities();
         Assert.assertNotNull(caps);
         caps.setBackgroundOpaque(false);
 
-        final Window window = createWindow(caps, -1, -1, width, height, true /* onscreen */, false /* undecorated */);
+        final Window window = createWindow(caps, -1, -1, width, height, true /* onscreen */, false /* undecorated */, true /* resizable */);
+        final CapabilitiesImmutable chosenCapabilities = window.getGraphicsConfiguration().getChosenCapabilities();
+        System.err.println("XXX: "+chosenCapabilities);
+        for(int state=0; state*100<durationPerTest; state++) {
+            Thread.sleep(100);
+        }
+        destroyWindow(window, true);
+    }
+
+    @Test
+    public void test03WindowLargerThanScreenAndNonResizeable() throws InterruptedException {
+        final Capabilities caps = new Capabilities();
+        Assert.assertNotNull(caps);
+        caps.setBackgroundOpaque(true);
+
+        // Here we want to create a window that is larger than the screen without having NEWT auto-resize it to fit inside the screen.
+        final Window window = createWindow(caps, -1, -1, 8000, 6000, true /* onscreen */, false /* undecorated */, false /* resizable */);
+
         final CapabilitiesImmutable chosenCapabilities = window.getGraphicsConfiguration().getChosenCapabilities();
         System.err.println("XXX: "+chosenCapabilities);
         for(int state=0; state*100<durationPerTest; state++) {
