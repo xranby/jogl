@@ -78,7 +78,7 @@ public class TestWindows02NEWT extends UITestCase {
         Assert.assertEquals(false,window.isVisible());
         window.setVisible(true);
         // System.err.println("************* Created: "+window);
-
+        // window.setSize(width, height); // Uncomment this makes test03 and test04 pass.
         Assert.assertEquals(true,display.isNativeValid());
         Assert.assertEquals(true,screen.isNativeValid());
         Assert.assertEquals(true,window.isVisible());
@@ -153,6 +153,24 @@ public class TestWindows02NEWT extends UITestCase {
 
         // Here we want to create a window that is larger than the screen without having NEWT auto-resize it to fit inside the screen.
         final Window window = createWindow(caps, -1, -1, 8000, 6000, true /* onscreen */, false /* undecorated */, false /* resizable */);
+
+        final CapabilitiesImmutable chosenCapabilities = window.getGraphicsConfiguration().getChosenCapabilities();
+        System.err.println("XXX: "+chosenCapabilities);
+        for(int state=0; state*100<durationPerTest; state++) {
+            Thread.sleep(100);
+        }
+        destroyWindow(window, true);
+    }
+
+    @Test
+    public void test04WindowLargerThanVirtualScreenAndNonResizeable() throws InterruptedException {
+        final Capabilities caps = new Capabilities();
+        Assert.assertNotNull(caps);
+        caps.setBackgroundOpaque(true);
+
+        // Here we want to create a window that is larger than the virtual screen, many GPU drivers has a maximum of 16384 x 16384
+        // this test will cause issues with some window-managers.
+        final Window window = createWindow(caps, -1, -1, 20000, 20000, true /* onscreen */, false /* undecorated */, false /* resizable */);
 
         final CapabilitiesImmutable chosenCapabilities = window.getGraphicsConfiguration().getChosenCapabilities();
         System.err.println("XXX: "+chosenCapabilities);
