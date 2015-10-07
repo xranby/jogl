@@ -1204,6 +1204,7 @@ public abstract class WindowImpl implements Window, NEWTEventConsumer
             mask = getReconfigureMask(CHANGE_MASK_VISIBILITY, visible);
         }
         reconfigureWindowImpl(x, y, width, height, mask);
+        stateMask.put(STATE_BIT_VISIBLE,visible);
     }
     final void setVisibleActionImpl(final boolean visible) {
         boolean nativeWindowCreated = false;
@@ -1271,7 +1272,7 @@ public abstract class WindowImpl implements Window, NEWTEventConsumer
         }
     }
     private class VisibleAction implements Runnable {
-        boolean visible;
+        final boolean visible;
 
         private VisibleAction(final boolean visible) {
             this.visible = visible;
