@@ -1204,6 +1204,7 @@ public abstract class WindowImpl implements Window, NEWTEventConsumer
             mask = getReconfigureMask(CHANGE_MASK_VISIBILITY, visible);
         }
         reconfigureWindowImpl(x, y, width, height, mask);
+        stateMask.put(STATE_BIT_VISIBLE,visible);
     }
     final void setVisibleActionImpl(final boolean visible) {
         boolean nativeWindowCreated = false;
@@ -1271,7 +1272,7 @@ public abstract class WindowImpl implements Window, NEWTEventConsumer
         }
     }
     private class VisibleAction implements Runnable {
-        boolean visible;
+        final boolean visible;
 
         private VisibleAction(final boolean visible) {
             this.visible = visible;
@@ -4412,6 +4413,7 @@ public abstract class WindowImpl implements Window, NEWTEventConsumer
         final DisplayImpl display = (DisplayImpl) screen.getDisplay();
         display.dispatchMessagesNative(); // status up2date
         long remaining;
+        // XXX !! thread needs to be run
         boolean _visible = stateMask.get(STATE_BIT_VISIBLE);
         for(remaining = timeOut; 0 < remaining && _visible != visible; remaining-=10 ) {
             try { Thread.sleep(10); } catch (final InterruptedException ie) {}
