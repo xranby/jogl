@@ -32,6 +32,7 @@
 
 package com.jogamp.nativewindow.egl;
 
+import com.jogamp.common.util.ReflectionUtil;
 import com.jogamp.common.util.VersionNumber;
 import com.jogamp.nativewindow.AbstractGraphicsDevice;
 import com.jogamp.nativewindow.DefaultGraphicsDevice;
@@ -78,6 +79,27 @@ public class EGLGraphicsDevice extends DefaultGraphicsDevice implements Cloneabl
         super(NativeWindowFactory.TYPE_EGL, DefaultGraphicsDevice.getDefaultDisplayConnection(), AbstractGraphicsDevice.DEFAULT_UNIT);
         this.nativeDisplayID[0] = 0 ; // EGL.EGL_DEFAULT_DISPLAY
         this.eglLifecycleCallback = null;
+    }
+
+    public static EGLGraphicsDevice hack(String type){
+        long handle = 0;
+        Object windowDriver = ReflectionUtil.createInstance("jogamp.newt.driver.linux.kms.WindowDriver", EGLGraphicsDevice.class.getClassLoader());
+        System.err.println("HACK  -----   windowDriver");
+        handle  = (long) ReflectionUtil.callMethod(windowDriver,ReflectionUtil.getMethod("jogamp.newt.driver.linux.kms.WindowDriver","hackHandle",null,EGLGraphicsDevice.class.getClassLoader()));
+        System.err.println("HACK  -----   handle");
+
+        return new EGLGraphicsDevice(type,handle);
+    }
+
+    public static EGLGraphicsDevice hackHack(long handle, String type) {
+        System.err.println("HACK HACK  -----   handle "+ handle+" & type "+type);
+        return new EGLGraphicsDevice(NativeWindowFactory.TYPE_EGL,handle);
+    }
+
+
+    public EGLGraphicsDevice(String type, long handle) {
+        super(NativeWindowFactory.TYPE_EGL, DefaultGraphicsDevice.getDefaultDisplayConnection(), AbstractGraphicsDevice.DEFAULT_UNIT, handle);
+        this.nativeDisplayID[0] = handle;
     }
 
     public EGLGraphicsDevice(final AbstractGraphicsDevice aDevice, final long eglDisplay, final EGLDisplayLifecycleCallback eglLifecycleCallback) {

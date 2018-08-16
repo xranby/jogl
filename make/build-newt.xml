@@ -143,6 +143,9 @@
 
         <property name="java.part.driver.android"
                   value="jogamp/newt/driver/android/**"/>
+                  
+        <property name="java.part.driver.linux.kms"
+                  value="jogamp/newt/driver/linux/kms/**"/>
 
         <!-- condition excludes -->
 
@@ -223,6 +226,7 @@
         <mkdir dir="${src.generated.c}/IntelGDL" />
         <mkdir dir="${src.generated.c}/bcm/egl" />
         <mkdir dir="${src.generated.c}/bcm/vc/iv" />
+        <mkdir dir="${src.generated.c}/linux/kms" />
         <mkdir dir="${classes}" />
         <mkdir dir="${obj.newt}" />
     </target>
@@ -274,6 +278,13 @@
       <compiler id="compiler.cfg.freebsd.newt" extends="compiler.cfg.freebsd">
         <includepath path="/usr/local/include" />
       </compiler>
+	  
+	  
+      <compiler id="compiler.cfg.linux.amd64.newt.drm" extends="compiler.cfg.linux.amd64">
+        <compilerarg value="-ldrm" />
+        <compilerarg value="-I/usr/include/libdrm" />
+      </compiler>
+
 
       <compiler id="compiler.cfg.linux.armv6.newt.x11" extends="compiler.cfg.linux.armv6">
         <!-- Need to force /usr/include headers on to include path (after all others), due to crosscompiler usage -->
@@ -310,6 +321,7 @@
 
       <linker id="linker.cfg.linux.newt.bcm_vc" extends="linker.cfg.linux">
         <!-- syslibset libs="EGL"/ -->
+        <syslibset libs="drm"/>
       </linker>
 
       <linker id="linker.cfg.linux.newt.bcm_egl" extends="linker.cfg.linux">
@@ -334,6 +346,7 @@
       </linker>
 
       <linker id="linker.cfg.linux.amd64.newt.x11" extends="linker.cfg.linux.amd64">
+        <syslibset libs="drm"/>
         <syslibset libs="X11"/>
         <syslibset libs="Xrandr"/>
         <syslibset libs="Xcursor"/>
@@ -435,7 +448,7 @@
 
     <target name="c.configure.linux.amd64" if="isLinuxAMD64">
       <echo message="Linux.AMD64" />
-      <property name="compiler.cfg.id"                      value="compiler.cfg.linux.amd64" />
+      <property name="compiler.cfg.id"                      value="compiler.cfg.linux.amd64.newt.drm" />
       <condition property="linker.cfg.id.oswin"             value="linker.cfg.linux.amd64.newt.x11"
                                                             else="linker.cfg.linux.amd64">
           <isset property="isX11" />
@@ -641,6 +654,7 @@
           <include name="${rootrel.src.c}/IntelGDL.c"         if="setup.addNativeIntelGDL"/>
           <include name="${rootrel.src.c}/bcm_egl.c"          if="setup.addNativeBroadcom"/>
           <include name="${rootrel.src.c}/bcm_vc_iv.c"        if="setup.addNativeBroadcom"/>
+          <include name="${rootrel.src.c}/linux_kms.c"        if="setup.addNativeBroadcom"/>
         </patternset>
 
         <echo message="Compiling @{output.lib.name}" />
@@ -687,6 +701,7 @@
                 <includepath path="stub_includes/embedded/IntelGDL" if="setup.addNativeIntelGDL" />
                 <includepath path="${src.generated.c}/bcm/egl"      if="setup.addNativeBroadcom" />
                 <includepath path="${src.generated.c}/bcm/vc/iv"    if="setup.addNativeBroadcom" />
+                <includepath path="${src.generated.c}/linux/kms"    if="setup.addNativeBroadcom" />
     
                 <!-- This must come last to not override real include paths -->
                 <!-- includepath path="stub_includes/macosx" if="isOSX" / -->
@@ -731,6 +746,9 @@
 
       <javah destdir="${src.generated.c}/bcm/egl"     classpath="${javah.classpath}" class="jogamp.newt.driver.bcm.egl.WindowDriver" />
       <javah destdir="${src.generated.c}/bcm/vc/iv"   classpath="${javah.classpath}" class="jogamp.newt.driver.bcm.vc.iv.DisplayDriver, jogamp.newt.driver.bcm.vc.iv.ScreenDriver, jogamp.newt.driver.bcm.vc.iv.WindowDriver" />
+
+	  <javah destdir="${src.generated.c}/linux/kms"   classpath="${javah.classpath}" class="jogamp.newt.driver.linux.kms.DisplayDriver, jogamp.newt.driver.linux.kms.ScreenDriver, jogamp.newt.driver.linux.kms.WindowDriver" />
+
 
       <javah destdir="${src.generated.c}/Windows"     classpath="${javah.classpath}" class="jogamp.newt.driver.windows.WindowDriver, jogamp.newt.driver.windows.ScreenDriver, jogamp.newt.driver.windows.DisplayDriver" />
       <javah destdir="${src.generated.c}/MacOSX"      classpath="${javah.classpath}" class="jogamp.newt.driver.macosx.WindowDriver, jogamp.newt.driver.macosx.ScreenDriver, jogamp.newt.driver.macosx.DisplayDriver" />

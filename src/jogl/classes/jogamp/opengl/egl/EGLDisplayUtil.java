@@ -284,7 +284,7 @@ public class EGLDisplayUtil {
         if( EGL.EGL_SUCCESS == eglRes ) {
             return eglDisplay[0];
         }
-        if( EGL.EGL_DEFAULT_DISPLAY != nativeDisplayID[0] ) { // fallback to DEGAULT_DISPLAY
+        if( EGL.EGL_DEFAULT_DISPLAY != nativeDisplayID[0] ) { // fallback to DEFAULT_DISPLAY
             if(DEBUG) {
                 System.err.println("EGLDisplayUtil.eglGetAndInitDisplay failed with native "+EGLContext.toHexString(nativeDisplayID[0])+", error "+EGLContext.toHexString(eglRes)+"/"+EGLContext.toHexString(eglError[0])+" - fallback!");
             }
@@ -324,6 +324,16 @@ public class EGLDisplayUtil {
             EGLDisplayUtil.eglTerminate(eglDisplayHandle);
         }
     };
+
+    public static EGLGraphicsDevice eglCreateEGLGraphicsDevice(String type) {
+        return EGLGraphicsDevice.hack(type);
+    }
+
+    public static EGLGraphicsDevice eglCreateEGLGraphicsDevice(long handle, String type) {
+
+        return EGLGraphicsDevice.hackHack(handle, type);
+    }
+
 
     /**
      * Returns an uninitialized {@link EGLGraphicsDevice}. User needs to issue {@link EGLGraphicsDevice#open()} before usage.
