@@ -31,6 +31,8 @@ package jogamp.opengl.egl;
 import java.util.ArrayList;
 import java.util.List;
 
+import jogamp.nativewindow.BcmVCArtifacts;
+
 public final class EGLES1DynamicLibraryBundleInfo extends EGLDynamicLibraryBundleInfo {
     protected EGLES1DynamicLibraryBundleInfo() {
         super();
@@ -40,8 +42,12 @@ public final class EGLES1DynamicLibraryBundleInfo extends EGLDynamicLibraryBundl
     public final List<List<String>> getToolLibNames() {
         final List<List<String>> libsList = new ArrayList<List<String>>();
         {
+       
             final List<String> libsGL = new ArrayList<String>();
+            final boolean bcm_vc_iv_quirk = BcmVCArtifacts.guessVCIVUsed();
 
+            if (bcm_vc_iv_quirk) {
+            } else {
             // this is the default lib name, according to the spec
             libsGL.add("libGLESv1_CM.so.2");
 
@@ -58,8 +64,9 @@ public final class EGLES1DynamicLibraryBundleInfo extends EGLDynamicLibraryBundl
             libsGL.add("libGLESv1_CM");
             libsGL.add("libGLES_CM");
             libsGL.add("libGLES_CL");
-
+            }
             libsList.add(libsGL);
+            
         }
         libsList.add(getEGLLibNamesList());
 

@@ -171,6 +171,51 @@ public class WindowDriver extends WindowImpl {
         return true; // default: always able to be created
     }
 
+/*
+    @Override
+    protected void createNativeImpl() {
+        if(0!=getParentWindowHandle()) {
+            throw new RuntimeException("Window parenting not supported (yet)");
+        }
+        // query a good configuration, however chose the final one by the native queried egl-cfg-id
+        // after creation at {@link #windowCreated(int, int, int)}.
+        final AbstractGraphicsConfiguration cfg = GraphicsConfigurationFactory.getFactory(getScreen().getDisplay().getGraphicsDevice(), capsRequested).chooseGraphicsConfiguration(
+                capsRequested, capsRequested, capabilitiesChooser, getScreen().getGraphicsScreen(), VisualIDHolder.VID_UNDEFINED);
+        if (null == cfg) {
+            throw new NativeWindowException("Error choosing GraphicsConfiguration creating window: "+this);
+        }
+        setGraphicsConfiguration(cfg);
+        final int[] winSize = convertToWindowUnits(new int[] {getScreen().getWidth(), getScreen().getHeight()});
+        setSizeImpl(winSize[0], winSize[1]);
+
+        setWindowHandle(realizeWindow( getWidth(), getHeight()));
+        if (0 == getWindowHandle()) {
+            throw new NativeWindowException("Error native Window Handle is null");
+        }
+
+
+        if (0 == getWindowHandle()) {
+            throw new NativeWindowException("Error native Window Handle is null");
+        }
+        windowHandleClose = nativeWindowHandle;
+
+        addWindowListener(keyTracker);
+        addWindowListener(mouseTracker);
+
+
+        focusChanged(false, true);
+    }
+*/
+    protected void setSizeImpl(final int width, final int height) {
+        if(0!=getWindowHandle()) {
+            // n/a in BroadcomEGL
+            System.err.println("KMS Window.setSizeImpl n/a with realized window");
+        } else {
+            defineSize(width, height);
+        }
+    }
+
+
     @Override
     protected void createNativeImpl() {
         if(0!=getParentWindowHandle()) {
@@ -219,16 +264,9 @@ public class WindowDriver extends WindowImpl {
         }
         setGraphicsConfiguration(cfg);
 
-        /*
-        gbm.surface = gbm_surface_create(gbm.dev,
-			drm.mode->hdisplay, drm.mode->vdisplay,
-			GBM_FORMAT_XRGB8888,
-GBM_BO_USE_SCANOUT | GBM_BO_USE_RENDERING);
-        */
-        long nativeSurface = CreateWindow0(display.getKMSHandle(), layer,
-                                           getX(), getY(), getWidth(), getHeight(),
-                                           chosenCaps.isBackgroundOpaque(), chosenCaps.getAlphaBits());
-        System.out.println("==========================   native device handle "+eglDevice.getHandle()+" window surface "+nativeSurface);
+
+        long nativeSurface = CreateWindow0(display.getKMSHandle(), getWidth(), getHeight());
+        System.out.println("==========================   native device handle 0x" + Long.toHexString(eglDevice.getHandle())+" window surface "+"0x"+Long.toHexString(nativeSurface));
 
         System.out.println("EGL Version"+ EGL.eglQueryString(eglDevice.getHandle(), EGL.EGL_VERSION));
         System.out.println("EGL Vendor "+ EGL.eglQueryString(eglDevice.getHandle(), EGL.EGL_VENDOR));
@@ -255,6 +293,9 @@ GBM_BO_USE_SCANOUT | GBM_BO_USE_RENDERING);
         configBuffer[12]=EGL.EGL_NONE;
 
         final IntBuffer numConfigs = Buffers.newDirectIntBuffer(1);
+
+
+
         EGL.eglGetConfigs(eglDevice.getHandle(), null, 0, numConfigs);
         System.out.println("eglGetConfigs       error= "+"0x"+Long.toHexString(EGL.eglGetError()));
 
@@ -262,7 +303,13 @@ GBM_BO_USE_SCANOUT | GBM_BO_USE_RENDERING);
 
         System.out.println("eglGetConfigs       numConfigs = "+numConfigs.get(0));
         //System.out.println(EGL.eglGetError());
+
         final PointerBuffer configs = PointerBuffer.allocateDirect(numConfigs.get(0));
+
+        EGL.eglGetConfigs(eglDevice.getHandle(), configs, configs.capacity(), numConfigs);
+        System.out.println("eglGetConfigs 2      error= "+"0x"+Long.toHexString(EGL.eglGetError()));
+
+
         EGL.eglChooseConfig(eglDevice.getHandle(), Buffers.newDirectIntBuffer(configBuffer), configs, configs.capacity(), numConfigs);
         System.out.println("eglChooseConfig       error= "+"0x"+Long.toHexString(EGL.eglGetError()));
         //System.out.println(EGL.eglGetError());
@@ -272,7 +319,7 @@ GBM_BO_USE_SCANOUT | GBM_BO_USE_RENDERING);
         contextBuffer[0] = EGL.EGL_CONTEXT_CLIENT_VERSION;
         contextBuffer[1] = 2;
         contextBuffer[2] = EGL.EGL_NONE;
-        long eglContext = EGL.eglCreateContext(eglDevice.getHandle(),configs.get(),EGL.EGL_NO_CONTEXT,Buffers.newDirectIntBuffer(contextBuffer));
+        long eglContext = EGL.eglCreateContext(eglDevice.getHandle(),configs.get(0),EGL.EGL_NO_CONTEXT,Buffers.newDirectIntBuffer(contextBuffer));
         System.out.println("eglCreateContext       error= "+"0x"+Long.toHexString(EGL.eglGetError()));
 
         nativeWindowHandle = eglDevice.getHandle();
@@ -389,6 +436,29 @@ GBM_BO_USE_SCANOUT | GBM_BO_USE_RENDERING);
         return true;
     }
 
+    @Override
+    public boolean surfaceSwap() {
+        System.out.println("   * ** * * surfaceSwap!!");
+        SwapWindow(getDisplayHandle(), getWindowHandle());
+
+        System.out.println("ok");
+        return true;
+    }
+
+
+    private long realizeWindow(final int width, final int height) {
+        if(DEBUG_IMPLEMENTATION) {
+            System.err.println("KMS Window.realizeWindow() with: "+width+"x"+height+", "+getGraphicsConfiguration());
+        }
+        final long handle = CreateWindow0(getDisplayHandle(), width, height);
+        if (0 == handle) {
+            throw new NativeWindowException("Error native Window Handle is null");
+        }
+        windowHandleClose = handle;
+        return handle;
+    }
+
+
     //----------------------------------------------------------------------
     // Internals only
     //
@@ -396,9 +466,10 @@ GBM_BO_USE_SCANOUT | GBM_BO_USE_RENDERING);
     private KeyTracker keyTracker;
 
     protected static native boolean initIDs();
-    private        native long CreateWindow0(long kmsDisplay, int layer, int x, int y, int width, int height, boolean opaque, int alphaBits);
+    private        native long CreateWindow0(long kmsDisplay, int width, int height);
     private        native void CloseWindow0(long kmsDisplay, long eglWindowHandle);
     private        native void reconfigure0(long eglWindowHandle, int x, int y, int width, int height, int flags);
+    private        native void SwapWindow(long eglDisplayHandle, long eglWindowHandle);
 
     private int    layer;
     private long   nativeWindowHandle;

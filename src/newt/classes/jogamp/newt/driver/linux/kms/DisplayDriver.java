@@ -57,15 +57,10 @@ public class DisplayDriver extends DisplayImpl {
     static {
         NEWTJNILibLoader.loadNEWT();
         GLProfile.initSingleton();
-        
-        System.out.println("********************************************   KMS DisplayDriver start");
 
         if (!DisplayDriver.initIDs()) {
             throw new NativeWindowException("Failed to initialize linux.kms Display jmethodIDs");
         }
-        
-        System.out.println("********************************************   KMS DisplayDriver initIDS");
-        
         if (!ScreenDriver.initIDs()) {
             throw new NativeWindowException("Failed to initialize linux.kms Screen jmethodIDs");
         }
@@ -86,11 +81,9 @@ public class DisplayDriver extends DisplayImpl {
             }
         }
         defaultPointerIconImage = image;
-        System.out.println("********************************************   KMS DisplayDriver initialized");
     }
 
     public static void initSingleton() {
-        System.out.println("********************************************   KMS DisplayDriver initSingleton");
         // just exist to ensure static init has been run
     }
 
@@ -104,16 +97,15 @@ public class DisplayDriver extends DisplayImpl {
     @Override
     protected void createNativeImpl() {
         kmsHandle = OpenKMSDisplay0();
-        System.out.println("<3 <3 <3 Create native KMS implementation "+kmsHandle);
-
-        //long[] handleBuffer = new long[1];
-        //handleBuffer[0] = kmsHandle;
-        //EGL.eglGetPlatformDisplay(EGLExt.EGL_PLATFORM_GBM_KHR, LongBuffer.wrap(handleBuffer), null);
+        System.out.println("DisplayDriver createNativeImpl KMS "+kmsHandle);
 
         aDevice = EGLDisplayUtil.eglCreateEGLGraphicsDevice(kmsHandle, NativeWindowFactory.TYPE_EGL);
 
-        //aDevice = EGLDisplayUtil.eglCreateEGLGraphicsDevice(kmsHandle, AbstractGraphicsDevice.DEFAULT_CONNECTION, AbstractGraphicsDevice.DEFAULT_UNIT);
+        System.out.println("DisplayDriver createNativeImpl aDevice "+aDevice);
+
         aDevice.open();
+
+        System.out.println("DisplayDriver createNativeImpl aDevice.open()");
 
         if( null != defaultPointerIconImage ) {
             defaultPointerIcon = (PointerIconImpl) createPointerIcon(defaultPointerIconImage, 0, 0);

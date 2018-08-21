@@ -30,6 +30,10 @@
 #include <stdio.h>
 #include <string.h>
 
+#include <EGL/egl.h>
+
+void EGLUtil_SwapWindow( EGLDisplay eglDisplay, EGLSurface eglSurface );
+
 /** 
  * See references in header file.
  */
@@ -38,13 +42,7 @@
 #include "jogamp_newt_driver_linux_kms_DisplayDriver.h"
 #include "jogamp_newt_driver_linux_kms_ScreenDriver.h"
 #include "jogamp_newt_driver_linux_kms_WindowDriver.h"
-#define VERBOSE_ON 1
 
-#ifdef VERBOSE_ON
-    #define DBG_PRINT(...) fprintf(stderr, __VA_ARGS__); fflush(stderr) 
-#else
-    #define DBG_PRINT(...)
-#endif
 
 static jmethodID setScreenSizeID = NULL;
 
@@ -53,9 +51,6 @@ static jmethodID positionChangedID = NULL;
 static jmethodID visibleChangedID = NULL;
 static jmethodID windowDestroyNotifyID = NULL;
 
-
-static const struct drm *drm;
-static const struct gbm *gbm;
 /**
  * Display
  */
@@ -67,27 +62,56 @@ JNIEXPORT jboolean JNICALL Java_jogamp_newt_driver_linux_kms_DisplayDriver_initI
     return JNI_TRUE;
 }
 
+static fd_set fds;
+static drmEventContext evctx = {
+			.version = DRM_EVENT_CONTEXT_VERSION,
+			.page_flip_handler = page_flip_handler,
+	};
+static struct gbm_bo *bo;
+static struct drm_fb *fb;
+static struct gbm_bo *next_bo;
+static int waiting_for_flip = 1;
+
 JNIEXPORT jlong JNICALL Java_jogamp_newt_driver_linux_kms_DisplayDriver_OpenKMSDisplay0
   (JNIEnv *env, jclass clazz)
 {
-    const char *device = "/dev/dri/card0";
-    uint64_t modifier = DRM_FORMAT_MOD_INVALID;
+    int ret;
 
-    drm = init_drm_legacy(device);
-    if (!drm) {
+    // 1
+    ret = init_drm();
+    if (ret) {
     	DBG_PRINT("failed to initialize DRM\n");
     	return JNI_FALSE;
     }
 
-    gbm = init_gbm(drm->fd, drm->mode->hdisplay, drm->mode->vdisplay,
-    	modifier);
-    if (!gbm) {
+
+    FD_ZERO(&fds);
+    FD_SET(0, &fds);
+    FD_SET(drm.fd, &fds);
+
+    // 2
+    ret = init_gbm();
+    if (ret) {
     	DBG_PRINT("failed to initialize GBM\n");
     	return JNI_FALSE;
     }
 
-    DBG_PRINT( "KMS.Display Open %p\n", (void*)(intptr_t)gbm->dev);
-    return (jlong) (intptr_t) gbm->dev;
+    // 3
+    ret = init_gl();
+    if (ret) {
+       	DBG_PRINT("failed to initialize EGL\n");
+       	return ret;
+    }
+
+    DBG_PRINT( "KMS.Display gbm.dev 0x%08x\n", (void*)(intptr_t)gbm.dev);
+    DBG_PRINT( "KMS.Display gbm.surface 0x%08x\n", (void*)(intptr_t)gbm.surface);
+
+    DBG_PRINT( "KMS.Display gl.display 0x%08x\n", (void*)(intptr_t)gl.display);
+    DBG_PRINT( "KMS.Display gl.config 0x%08x\n", (void*)(intptr_t)gl.config);
+    DBG_PRINT( "KMS.Display gl.surface 0x%08x\n", (void*)(intptr_t)gl.surface);
+    DBG_PRINT( "KMS.Display gl.context 0x%08x\n", (void*)(intptr_t)gl.context);
+
+    return (jlong) (intptr_t) gbm.dev;
 }
 
 JNIEXPORT void JNICALL Java_jogamp_newt_driver_linux_kms_DisplayDriver_CloseKMSDisplay0
@@ -171,13 +195,9 @@ JNIEXPORT jboolean JNICALL Java_jogamp_newt_driver_linux_kms_WindowDriver_initID
 }
 
 JNIEXPORT jlong JNICALL Java_jogamp_newt_driver_linux_kms_WindowDriver_CreateWindow0
-  (JNIEnv *env, jobject obj, jlong display, jint layer, jint x, jint y, jint width, jint height, jboolean opaque, jint alphaBits)
+  (JNIEnv *env, jobject obj, jlong display, jint width, jint height)
 {
-   /*gbm.surface = gbm_surface_create(gbm.dev,
-            drm.mode->hdisplay, drm.mode->vdisplay,
-   			GBM_FORMAT_XRGB8888,
-            GBM_BO_USE_SCANOUT | GBM_BO_USE_RENDERING);*/
-   return gbm->surface;
+   return (jlong) (intptr_t) gbm.surface;
 }
 
 JNIEXPORT void JNICALL Java_jogamp_newt_driver_linux_kms_WindowDriver_CloseWindow0
@@ -186,3 +206,47 @@ JNIEXPORT void JNICALL Java_jogamp_newt_driver_linux_kms_WindowDriver_CloseWindo
     return;
 }
 
+
+JNIEXPORT void JNICALL Java_jogamp_newt_driver_linux_kms_WindowDriver_SwapWindow
+  (JNIEnv *env, jobject obj, jlong display, jlong window)
+{
+    EGLDisplay dpy  = (EGLDisplay) (intptr_t) display;
+    EGLSurface surf = (EGLSurface) (intptr_t) window;
+
+    DBG_PRINT( "[SwapWindow] dpy %p, win %p\n", dpy, surf);
+
+    EGLUtil_SwapWindow( dpy, surf );
+
+    next_bo = gbm_surface_lock_front_buffer(gbm.surface);
+    fb = drm_fb_get_from_bo(next_bo);
+
+    /*
+     * Here you could also update drm plane layers if you want
+     * hw composition
+     */
+
+    int ret = drmModePageFlip(drm.fd, drm.crtc_id, fb->fb_id,
+    		DRM_MODE_PAGE_FLIP_EVENT, &waiting_for_flip);
+    if (ret) {
+    	DBG_PRINT("failed to queue page flip: %s\n", strerror(errno));
+    }
+
+    while (waiting_for_flip) {
+    	ret = select(drm.fd + 1, &fds, NULL, NULL, NULL);
+    	if (ret < 0) {
+    		DBG_PRINT("select err: %s\n", strerror(errno));
+    	} else if (ret == 0) {
+    		DBG_PRINT("select timeout!\n");
+    	} else if (FD_ISSET(0, &fds)) {
+    		DBG_PRINT("user interrupted!\n");
+    		break;
+    	}
+    	drmHandleEvent(drm.fd, &evctx);
+   	}
+
+    /* release last buffer to render on again: */
+    gbm_surface_release_buffer(gbm.surface, bo);
+    bo = next_bo;
+
+    DBG_PRINT( "[SwapWindow] X\n");
+}

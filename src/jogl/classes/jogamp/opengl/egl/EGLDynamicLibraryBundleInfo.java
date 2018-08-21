@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import jogamp.common.os.PlatformPropsImpl;
+import jogamp.nativewindow.BcmVCArtifacts;
 import jogamp.opengl.GLDynamicLibraryBundleInfo;
 
 import com.jogamp.common.os.AndroidVersion;
@@ -96,18 +97,23 @@ public abstract class EGLDynamicLibraryBundleInfo extends GLDynamicLibraryBundle
 
     protected final List<String> getEGLLibNamesList() {
         final List<String> eglLibNames = new ArrayList<String>();
+        
+        final boolean bcm_vc_iv_quirk = BcmVCArtifacts.guessVCIVUsed();
+        
+        if(bcm_vc_iv_quirk) {
+        	eglLibNames.add("libbrcmEGL.so");
+        } else {
+        	// this is the default EGL lib name, according to the spec
+        	eglLibNames.add("libEGL.so.1");
 
-        // this is the default EGL lib name, according to the spec
-        eglLibNames.add("libEGL.so.1");
+        	// try these as well, if spec fails
+        	eglLibNames.add("libEGL.so");
+        	eglLibNames.add("EGL");
 
-        // try these as well, if spec fails
-        eglLibNames.add("libEGL.so");
-        eglLibNames.add("EGL");
-
-        // for windows distributions using the 'unlike' lib prefix,
-        // where our tool does not add it.
-        eglLibNames.add("libEGL");
-
+        	// for windows distributions using the 'unlike' lib prefix,
+        	// where our tool does not add it.
+        	eglLibNames.add("libEGL");
+        }
         return eglLibNames;
     }
 
