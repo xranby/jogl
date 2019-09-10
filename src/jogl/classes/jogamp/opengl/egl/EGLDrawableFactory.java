@@ -563,17 +563,18 @@ public class EGLDrawableFactory extends GLDrawableFactoryImpl {
                     }
                 }
             } else {
-                initDefaultDevice = false;
+
 
                 String nwt = NativeWindowFactory.getNativeWindowType(true);
                 if(nwt.equals(NativeWindowFactory.TYPE_KMS)) {
+                    initDefaultDevice = true;
                     // EGL device already opened for KMS by the linux.kms.WindowDriver
                     defaultDeviceEGLFeatures = new EGLFeatures(defaultDevice);
-                    //final int quirk = GLRendererQuirks.SingletonEGLDisplayOnly;
-                    //GLRendererQuirks.addStickyDeviceQuirk(adevice, quirk);
-                    //EGLDisplayUtil.setSingletonEGLDisplayOnly(true);
+                    final int quirk = GLRendererQuirks.SingletonEGLDisplayOnly;
+                    GLRendererQuirks.addStickyDeviceQuirk(adevice, quirk);
+                    EGLDisplayUtil.setSingletonEGLDisplayOnly(true);
                 } else {
-
+                    initDefaultDevice = false;
                     if (null == defaultSharedResource) {
                         throw new InternalError("XXX: defaultDevice " + defaultDevice + ", adevice " + adevice);
                     }

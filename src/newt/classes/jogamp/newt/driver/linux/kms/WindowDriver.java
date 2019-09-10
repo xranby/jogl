@@ -258,6 +258,7 @@ public class WindowDriver extends WindowImpl {
             throw new NativeWindowException("Error choosing GraphicsConfiguration creating window: "+this);
         }
         final Capabilities chosenCaps = (Capabilities) cfg.getChosenCapabilities();
+
         // FIXME: Pass along opaque flag, since EGL doesn't determine it
         if(capsRequested.isBackgroundOpaque() != chosenCaps.isBackgroundOpaque()) {
             chosenCaps.setBackgroundOpaque(capsRequested.isBackgroundOpaque());
