@@ -187,7 +187,7 @@ public abstract class NativeWindowFactory {
               if( BcmVCArtifacts.guessVCIVUsed() ) {
                 return TYPE_BCM_VC_IV;
               }
-              return TYPE_DEFAULT;
+              return TYPE_X11;
         }
     }
 
