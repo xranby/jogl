@@ -53,6 +53,7 @@ import com.jogamp.nativewindow.NativeWindowFactory;
 import com.jogamp.nativewindow.ProxySurface;
 import com.jogamp.nativewindow.UpstreamSurfaceHook;
 import com.jogamp.nativewindow.VisualIDHolder;
+import com.jogamp.nativewindow.GenericUpstreamSurfacelessHook;
 import com.jogamp.opengl.GL;
 import com.jogamp.opengl.GLCapabilities;
 import com.jogamp.opengl.GLCapabilitiesChooser;
@@ -80,7 +81,6 @@ import com.jogamp.common.os.DynamicLookupHelper;
 import com.jogamp.common.os.Platform;
 import com.jogamp.common.util.ReflectionUtil;
 import com.jogamp.common.util.VersionNumber;
-import com.jogamp.nativewindow.GenericUpstreamSurfacelessHook;
 import com.jogamp.nativewindow.egl.EGLGraphicsDevice;
 import com.jogamp.opengl.GLRendererQuirks;
 import com.jogamp.opengl.egl.EGL;
@@ -345,7 +345,12 @@ public class EGLDrawableFactory extends GLDrawableFactoryImpl {
 
                     // Note: defaultDevice.open() triggers eglInitialize(..) which crashed on Windows w/ Chrome/ANGLE, FF/ANGLE!
                     // Hence opening will happen later, eventually
-                    defaultDevice = EGLDisplayUtil.eglCreateEGLGraphicsDevice(EGL.EGL_DEFAULT_DISPLAY, defaultConnection, AbstractGraphicsDevice.DEFAULT_UNIT);
+
+                    if(NativeWindowFactory.TYPE_KMS.equals(nwt)) {
+                        defaultDevice = EGLDisplayUtil.eglCreateEGLGraphicsDevice(nwt);
+                    } else {
+                        defaultDevice = EGLDisplayUtil.eglCreateEGLGraphicsDevice(EGL.EGL_DEFAULT_DISPLAY, defaultConnection, AbstractGraphicsDevice.DEFAULT_UNIT);
+                    }
 
                     // Init shared resources off thread
                     // Will be released via ShutdownHook
@@ -537,7 +542,7 @@ public class EGLDrawableFactory extends GLDrawableFactoryImpl {
                 }
                 // Probe for GLRendererQuirks.SingletonEGLDisplayOnly
                 final boolean singletonEGLDisplayOnlyVendor, singletonEGLDisplayOnlyProbe;
-                if( defaultDeviceEGLFeatures.vendor.contains("NVIDIA") ) { // OpenGL ES 3.1 NVIDIA 355.06 unstable
+                if( defaultDeviceEGLFeatures.vendor!=null && defaultDeviceEGLFeatures.vendor.contains("NVIDIA") ) { // OpenGL ES 3.1 NVIDIA 355.06 unstable
                     singletonEGLDisplayOnlyVendor=true;
                     singletonEGLDisplayOnlyProbe=false;
                 } else {
@@ -558,9 +563,21 @@ public class EGLDrawableFactory extends GLDrawableFactoryImpl {
                     }
                 }
             } else {
-                initDefaultDevice = false;
-                if( null == defaultSharedResource ) {
-                    throw new InternalError("XXX: defaultDevice "+defaultDevice+", adevice "+adevice);
+
+
+                String nwt = NativeWindowFactory.getNativeWindowType(true);
+                if(nwt.equals(NativeWindowFactory.TYPE_KMS)) {
+                    initDefaultDevice = true;
+                    // EGL device already opened for KMS by the linux.kms.WindowDriver
+                    defaultDeviceEGLFeatures = new EGLFeatures(defaultDevice);
+                    final int quirk = GLRendererQuirks.SingletonEGLDisplayOnly;
+                    GLRendererQuirks.addStickyDeviceQuirk(adevice, quirk);
+                    EGLDisplayUtil.setSingletonEGLDisplayOnly(true);
+                } else {
+                    initDefaultDevice = false;
+                    if (null == defaultSharedResource) {
+                        throw new InternalError("XXX: defaultDevice " + defaultDevice + ", adevice " + adevice);
+                    }
                 }
             }
 

@@ -115,6 +115,9 @@ public abstract class NativeWindowFactory {
 
     /** Android/EGL type, as retrieved with {@link #getNativeWindowType(boolean)}. String is canonical via {@link String#intern()}.*/
     public static final String TYPE_ANDROID = ".android";
+    
+    /** Linux Kernel Mode Setting (KMS) type, as retrieved with {@link #getNativeWindowType(boolean)}. String is canonical via {@link String#intern()}. */
+    public static final String TYPE_KMS = ".linux.kms";
 
     /** Mac OS X type, as retrieved with {@link #getNativeWindowType(boolean)}. String is canonical via {@link String#intern()}. */
     public static final String TYPE_MACOSX = ".macosx";

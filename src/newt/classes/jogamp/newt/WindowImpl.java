@@ -1028,6 +1028,7 @@ public abstract class WindowImpl implements Window, NEWTEventConsumer
 
     @Override
     public final int lockSurface() throws NativeWindowException, RuntimeException {
+        System.out.println("++ lockSurface()");
         final RecursiveLock _wlock = windowLock;
         _wlock.lock();
         surfaceLockCount++;
@@ -1058,6 +1059,7 @@ public abstract class WindowImpl implements Window, NEWTEventConsumer
 
     @Override
     public final void unlockSurface() {
+        System.out.println("-- lockSurface()");
         final RecursiveLock _wlock = windowLock;
         _wlock.validateLocked();
 
