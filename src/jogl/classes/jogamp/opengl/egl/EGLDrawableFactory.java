@@ -346,7 +346,7 @@ public class EGLDrawableFactory extends GLDrawableFactoryImpl {
                     // Note: defaultDevice.open() triggers eglInitialize(..) which crashed on Windows w/ Chrome/ANGLE, FF/ANGLE!
                     // Hence opening will happen later, eventually
 
-                    if(NativeWindowFactory.TYPE_KMS.equals(nwt)) {
+                    if(NativeWindowFactory.TYPE_KMS.equals(nwt)||NativeWindowFactory.TYPE_GBM.equals(nwt)) {
                         defaultDevice = EGLDisplayUtil.eglCreateEGLGraphicsDevice(nwt);
                     } else {
                         defaultDevice = EGLDisplayUtil.eglCreateEGLGraphicsDevice(EGL.EGL_DEFAULT_DISPLAY, defaultConnection, AbstractGraphicsDevice.DEFAULT_UNIT);
@@ -566,9 +566,10 @@ public class EGLDrawableFactory extends GLDrawableFactoryImpl {
 
 
                 String nwt = NativeWindowFactory.getNativeWindowType(true);
-                if(nwt.equals(NativeWindowFactory.TYPE_KMS)) {
+                if(nwt.equals(NativeWindowFactory.TYPE_KMS)||nwt.equals(NativeWindowFactory.TYPE_GBM)) {
                     initDefaultDevice = true;
                     // EGL device already opened for KMS by the linux.kms.WindowDriver
+                    // EGL device already opened for GBM by the .gbm.WindowDriver
                     defaultDeviceEGLFeatures = new EGLFeatures(defaultDevice);
                     final int quirk = GLRendererQuirks.SingletonEGLDisplayOnly;
                     GLRendererQuirks.addStickyDeviceQuirk(adevice, quirk);

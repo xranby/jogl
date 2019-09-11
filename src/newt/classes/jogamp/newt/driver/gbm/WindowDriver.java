@@ -20,6 +20,12 @@ import jogamp.newt.WindowImpl;
 import jogamp.newt.driver.linux.LinuxEventDeviceTracker;
 import jogamp.newt.driver.linux.LinuxMouseTracker;
 
+import com.jogamp.newt.Display;
+import com.jogamp.newt.NewtFactory;
+import com.jogamp.newt.Screen;
+import com.jogamp.newt.Window;
+
+
 public class WindowDriver extends WindowImpl {
 
     private final LinuxMouseTracker linuxMouseTracker;
@@ -30,6 +36,22 @@ public class WindowDriver extends WindowImpl {
         this.linuxEventDeviceTracker = LinuxEventDeviceTracker.getSingleton();
     }
 
+    public static long hackHandle() {
+        System.out.println("********************************************   GBM WindowyDriver HACK handle ");
+
+        Display display = NewtFactory.createDisplay(NativeWindowFactory.TYPE_GBM, null, false);
+        System.out.println("********************************************   GBM WindowyDriver HACK handle display ");
+        Screen screen = NewtFactory.createScreen(display, 0);
+        System.out.println("********************************************   GBM WindowyDriver HACK handle screen");
+        Window window = NewtFactory.createWindow(screen, new Capabilities());
+        System.out.println("********************************************   GBM WindowyDriver HACK handle window" + window);
+
+        window.setVisible(true);
+        //System.out.println("********************************************   KMS WindowyDriver HACK handle window visible");
+        System.out.println("********************************************   GBM WindowyDriver HACK handle "+window.getDisplayHandle());
+
+        return window.getWindowHandle();
+    }
 
     @Override
     protected final int getSupportedReconfigMaskImpl() {

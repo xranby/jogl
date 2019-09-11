@@ -83,9 +83,9 @@ public class EGLGraphicsDevice extends DefaultGraphicsDevice implements Cloneabl
 
     public static EGLGraphicsDevice hack(String type){
         long handle = 0;
-        Object windowDriver = ReflectionUtil.createInstance("jogamp.newt.driver.linux.kms.WindowDriver", EGLGraphicsDevice.class.getClassLoader());
+        Object windowDriver = ReflectionUtil.createInstance("jogamp.newt.driver"+type+".WindowDriver", EGLGraphicsDevice.class.getClassLoader());
         System.err.println("HACK  -----   windowDriver");
-        handle  = (long) ReflectionUtil.callMethod(windowDriver,ReflectionUtil.getMethod("jogamp.newt.driver.linux.kms.WindowDriver","hackHandle",null,EGLGraphicsDevice.class.getClassLoader()));
+        handle  = (long) ReflectionUtil.callMethod(windowDriver,ReflectionUtil.getMethod("jogamp.newt.driver"+type+".WindowDriver","hackHandle",null,EGLGraphicsDevice.class.getClassLoader()));
         System.err.println("HACK  -----   handle");
 
         return new EGLGraphicsDevice(type,handle);
